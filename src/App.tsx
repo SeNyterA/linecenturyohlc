@@ -1,102 +1,68 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { DatePickerInput } from "@mantine/dates";
-import * as echarts from "echarts";
-import { useEffect } from "react";
+import { IconCalendar } from "@tabler/icons-react";
+import dayjs from "dayjs";
+import { useEffect, useState } from "react";
+import useChart from "./services/chart/useChart";
+import useChartData from "./services/chart/useChartData";
 
-import Papa from "papaparse";
+const App: React.FC = () => {
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
+  const chart = useChart("chart");
+  const chartData = useChartData("/VFS_historical_data_StockScan.csv");
 
-async function parseCSVFile(file) {
-  return new Promise((resolve, reject) => {
-    Papa.parse(file, {
-      header: true,
-      download: true,
-      complete: function (results) {
-        const categoryData = results.data.map((row) => row.Date);
-        const values = results.data.map((row) =>
-          [row.Open, row.Close, row.Low, row.High].map(Number)
-        );
-
-        resolve({ categoryData, values });
-      },
-      error: reject,
-    });
-  });
-}
-
-function App() {
   useEffect(() => {
-    parseCSVFile("/VFS_historical_data_StockScan.csv")
-      .then((data0) => {
-        var chartDom = document.getElementById("chart");
-        var myChart = echarts.init(chartDom);
-        var option;
-
-        const upColor = "#ec0000";
-        const upBorderColor = "#8A0000";
-        const downColor = "#00da3c";
-        const downBorderColor = "#008F28";
-
-        option = {
-          title: {
-            text: "",
-            left: 0,
-          },
-          tooltip: {
-            trigger: "axis",
-            axisPointer: {
-              type: "cross",
-            },
-          },
-
-          grid: {
-            left: "10%",
-            right: "10%",
-            bottom: "15%",
-          },
-          xAxis: {
-            type: "category",
-            data: data0.categoryData,
-            boundaryGap: false,
-            axisLine: { onZero: false },
-            splitLine: { show: false },
-            min: "dataMin",
-            max: "dataMax",
-          },
-          yAxis: {
-            scale: true,
-            splitArea: {
-              show: true,
-            },
-            position: "right",
-          },
-
-          series: [
-            {
-              name: "日K",
-              type: "candlestick",
-              data: data0.values,
-              itemStyle: {
-                color: upColor,
-                color0: downColor,
-                borderColor: upBorderColor,
-                borderColor0: downBorderColor,
-              },
-            },
-          ],
-        };
-
-        option && myChart.setOption(option);
-      })
-      .catch((error) => console.error(error));
-  }, []);
+    if (!chart || !chartData) return;
+    const formattedStartDate = startDate
+      ? dayjs(startDate).format("YYYY-MM-DD")
+      : chartData.startDate;
+    const formattedEndDate = endDate
+      ? dayjs(endDate).format("YYYY-MM-DD")
+      : chartData.endDate;
+    chart?.setOption({
+      categoryData: chartData.categoryData,
+      values: chartData.values,
+      startDate: formattedStartDate,
+      endDate: formattedEndDate,
+    });
+  }, [chartData, startDate, endDate, chart]);
 
   return (
-    <div className="h-screen w-screen flex flex-col">
+    <div className="h-screen w-screen flex flex-col p-10">
       <div className="flex justify-end gap-2 w-full">
-        <DatePickerInput valueFormat="YYYY-MM-DD" label="sss" w={300} />
+        <DatePickerInput
+          leftSection={<IconCalendar size={14} />}
+          placeholder="YYYY-MM-DD"
+          valueFormat="YYYY-MM-DD"
+          value={startDate}
+          onChange={(e) => setStartDate(e!)}
+          clearable
+          minDate={dayjs(chartData?.startDate).toDate()}
+          maxDate={
+            endDate && dayjs(endDate).isBefore(dayjs(chartData?.endDate))
+              ? dayjs(endDate).toDate()
+              : dayjs(chartData?.endDate).toDate()
+          }
+        />
+        <DatePickerInput
+          leftSection={<IconCalendar size={14} />}
+          placeholder="YYYY-MM-DD"
+          valueFormat="YYYY-MM-DD"
+          value={endDate}
+          onChange={(e) => setEndDate(e!)}
+          clearable
+          minDate={
+            startDate && dayjs(startDate).isAfter(dayjs(chartData?.startDate))
+              ? dayjs(startDate).toDate()
+              : dayjs(chartData?.startDate).toDate()
+          }
+          maxDate={dayjs(chartData?.endDate).toDate()}
+        />
       </div>
       <div className="flex-1" id="chart"></div>
     </div>
   );
-}
+};
 
 export default App;

@@ -15,11 +15,13 @@ class Chart {
   private downBorderColor = "#008F28";
 
   constructor(private chartDom: HTMLElement) {
-    this.chart = echarts.init(this.chartDom);
+    this.chart = echarts.init(this.chartDom, "dark");
+    window.addEventListener("resize", () => {
+      this.chart.resize();
+    });
   }
 
   setOption(data: Data) {
-    console.log(data)
     const filteredCategoryData = data.categoryData.filter(
       (date) => date >= data.startDate && date <= data.endDate
     );
@@ -41,14 +43,14 @@ class Chart {
         },
       },
       grid: {
-        left: "10%",
-        right: "10%",
-        bottom: "15%",
+        left: "20px",
+        right: "20px",
+        bottom: "20px",
       },
       xAxis: {
         type: "category",
         data: filteredCategoryData,
-        boundaryGap: false,
+        boundaryGap: true,
         axisLine: { onZero: false },
         splitLine: { show: false },
         min: "dataMin",
@@ -77,6 +79,8 @@ class Chart {
             color0: this.downColor,
             borderColor: this.upBorderColor,
             borderColor0: this.downBorderColor,
+            width: "auto",
+            maxWidth: 20,
           },
         },
       ],

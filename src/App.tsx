@@ -29,7 +29,7 @@ const App: React.FC = () => {
   }, [chartData, startDate, endDate, chart]);
 
   return (
-    <div className="h-screen w-screen flex flex-col p-10">
+    <div className="h-screen w-screen flex flex-col p-10 bg-[#100c2a]">
       <div className="flex justify-end gap-2 w-full">
         <DatePickerInput
           leftSection={<IconCalendar size={14} />}

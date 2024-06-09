@@ -1,35 +1,102 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { DatePickerInput } from "@mantine/dates";
+import * as echarts from "echarts";
+import { useEffect } from "react";
 
-function App() {
-  const [count, setCount] = useState(0)
+import Papa from "papaparse";
 
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+async function parseCSVFile(file) {
+  return new Promise((resolve, reject) => {
+    Papa.parse(file, {
+      header: true,
+      download: true,
+      complete: function (results) {
+        const categoryData = results.data.map((row) => row.Date);
+        const values = results.data.map((row) =>
+          [row.Open, row.Close, row.Low, row.High].map(Number)
+        );
+
+        resolve({ categoryData, values });
+      },
+      error: reject,
+    });
+  });
 }
 
-export default App
+function App() {
+  useEffect(() => {
+    parseCSVFile("/VFS_historical_data_StockScan.csv")
+      .then((data0) => {
+        var chartDom = document.getElementById("chart");
+        var myChart = echarts.init(chartDom);
+        var option;
+
+        const upColor = "#ec0000";
+        const upBorderColor = "#8A0000";
+        const downColor = "#00da3c";
+        const downBorderColor = "#008F28";
+
+        option = {
+          title: {
+            text: "",
+            left: 0,
+          },
+          tooltip: {
+            trigger: "axis",
+            axisPointer: {
+              type: "cross",
+            },
+          },
+
+          grid: {
+            left: "10%",
+            right: "10%",
+            bottom: "15%",
+          },
+          xAxis: {
+            type: "category",
+            data: data0.categoryData,
+            boundaryGap: false,
+            axisLine: { onZero: false },
+            splitLine: { show: false },
+            min: "dataMin",
+            max: "dataMax",
+          },
+          yAxis: {
+            scale: true,
+            splitArea: {
+              show: true,
+            },
+            position: "right",
+          },
+
+          series: [
+            {
+              name: "日K",
+              type: "candlestick",
+              data: data0.values,
+              itemStyle: {
+                color: upColor,
+                color0: downColor,
+                borderColor: upBorderColor,
+                borderColor0: downBorderColor,
+              },
+            },
+          ],
+        };
+
+        option && myChart.setOption(option);
+      })
+      .catch((error) => console.error(error));
+  }, []);
+
+  return (
+    <div className="h-screen w-screen flex flex-col">
+      <div className="flex justify-end gap-2 w-full">
+        <DatePickerInput valueFormat="YYYY-MM-DD" label="sss" w={300} />
+      </div>
+      <div className="flex-1" id="chart"></div>
+    </div>
+  );
+}
+
+export default App;

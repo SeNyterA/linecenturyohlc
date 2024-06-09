@@ -43,8 +43,8 @@ class Chart {
         },
       },
       grid: {
-        left: "20px",
-        right: "20px",
+        left: "0px",
+        right: "50px",
         bottom: "20px",
       },
       xAxis: {
